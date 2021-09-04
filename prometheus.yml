@@ -16,7 +16,12 @@ rule_files:
 # A scrape configuration containing exactly one endpoint to scrape:
 # Here it's Prometheus itself.
 scrape_configs:
-  - job_name: 'prometheus'
+  - job_name: 'job_prometheus'
     scrape_interval: 5s
     static_configs:
       - targets: ['localhost:9090']
+
+  - job_name: 'job_app_go'
+    scrape_interval: 5s
+    static_configs:
+      - targets: [ 'app_go:8181' ]

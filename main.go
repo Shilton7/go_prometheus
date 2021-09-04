@@ -23,11 +23,18 @@ var httpRequestsTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
 	Help: "Count of all HTTP requests for appgo",
 }, []string{})
 
+// Histogram
+var httpDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
+	Name: "app_go_http_request_duration",
+	Help: "Duration in seconds of all HTTP requests for appgo",
+}, []string{"handler"})
+
 func main() {
 	r := prometheus.NewRegistry()
 
-	r.MustRegister(onlineUsers)       //Gauge
+	r.MustRegister(onlineUsers)       // Gauge
 	r.MustRegister(httpRequestsTotal) // Counter
+	r.MustRegister(httpDuration)      // Histogram
 
 	//Gauge
 	go func() {
@@ -45,8 +52,17 @@ func main() {
 		w.Write([]byte("Hello Shilton!"))
 	})
 
-	// Counter
-	http.Handle("/", promhttp.InstrumentHandlerCounter(httpRequestsTotal, home))
+	// Counter old
+	// http.Handle("/", promhttp.InstrumentHandlerCounter(httpRequestsTotal, home))
+
+	// Histogram
+	duration := promhttp.InstrumentHandlerDuration(
+		httpDuration.MustCurryWith(prometheus.Labels{"handler": "home"}),
+		promhttp.InstrumentHandlerCounter(httpRequestsTotal, home),
+	)
+
+	// Histogram + Counter
+	http.Handle("/", duration)
 
 	// Server Start
 	log.Fatal(http.ListenAndServe(":8181", nil))

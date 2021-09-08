@@ -6,6 +6,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"time"
 )
 
 // Gauge
@@ -48,6 +49,7 @@ func main() {
 
 	// Counter
 	home := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(time.Duration(rand.Intn(7)) * time.Second)
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("Hello Shilton!"))
 	})
@@ -56,13 +58,27 @@ func main() {
 	// http.Handle("/", promhttp.InstrumentHandlerCounter(httpRequestsTotal, home))
 
 	// Histogram
-	duration := promhttp.InstrumentHandlerDuration(
+	durationHome := promhttp.InstrumentHandlerDuration(
 		httpDuration.MustCurryWith(prometheus.Labels{"handler": "home"}),
 		promhttp.InstrumentHandlerCounter(httpRequestsTotal, home),
 	)
 
 	// Histogram + Counter
-	http.Handle("/", duration)
+	http.Handle("/", durationHome)
+
+	// Contact
+	contact := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(time.Duration(rand.Intn(12)) * time.Second)
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("Contact Here!"))
+	})
+
+	durationContact := promhttp.InstrumentHandlerDuration(
+		httpDuration.MustCurryWith(prometheus.Labels{"handler": "contact"}),
+		promhttp.InstrumentHandlerCounter(httpRequestsTotal, contact),
+	)
+
+	http.Handle("/contact", durationContact)
 
 	// Server Start
 	log.Fatal(http.ListenAndServe(":8181", nil))
